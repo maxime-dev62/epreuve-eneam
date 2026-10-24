@@ -1,0 +1,54 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Filières{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>🏫 Filières</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">← Retour</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>➕ Ajouter une filière</h2>
+    <form method="POST" action="{{ url_for('admin_filiere_new') }}"
+          style="display:flex; gap:1rem; align-items:flex-end; flex-wrap:wrap;">
+        <div style="flex:1; min-width:120px;">
+            <label>Code</label>
+            <input name="code" required maxlength="20">
+        </div>
+        <div style="flex:3; min-width:250px;">
+            <label>Nom complet</label>
+            <input name="nom" required maxlength="100">
+        </div>
+        <button class="btn btn-primary" style="margin-bottom:1rem;">Ajouter</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>📋 Liste</h2>
+    <table>
+        <thead>
+            <tr><th>Code</th><th>Nom</th><th>Matières</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for f in filieres %}
+            <tr>
+                <form method="POST" action="{{ url_for('admin_filiere_edit', filiere_id=f.id) }}">
+                    <td><input name="code" value="{{ f.code }}" style="margin:0;" required></td>
+                    <td><input name="nom" value="{{ f.nom }}" style="margin:0;" required></td>
+                    <td>{{ f.matieres|length }}</td>
+                    <td style="white-space:nowrap;">
+                        <button type="submit" class="btn btn-secondary btn-sm">💾</button>
+                </form>
+                        <form method="POST" action="{{ url_for('admin_filiere_delete', filiere_id=f.id) }}"
+                              class="inline" onsubmit="return confirm('Supprimer {{ f.code }} ?');">
+                            <button class="btn btn-danger btn-sm">🗑️</button>
+                        </form>
+                    </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

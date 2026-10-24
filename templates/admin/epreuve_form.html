@@ -1,0 +1,128 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}{% if epreuve %}Modifier{% else %}Nouvelle{% endif %} épreuve{% endblock %}
+
+{% block content %}
+
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+    <h2>{% if epreuve %}✏️ Modifier l'épreuve{% else %}➕ Nouvelle épreuve{% endif %}</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+
+        <label>1. Filière</label>
+        <select id="filiere-select" required>
+            <option value="">-- Choisir une filière --</option>
+            {% for f in filieres %}
+            <option value="{{ f.id }}"
+                {% if epreuve and epreuve.matiere.filiere.id == f.id %}selected{% endif %}>
+                {{ f.code }} — {{ f.nom }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <label>2. Matière</label>
+        <select name="matiere_id" id="matiere-select" required>
+            <option value="">-- Choisir d'abord une filière --</option>
+            {% if epreuve %}
+            <option value="{{ epreuve.matiere.id }}" selected>
+                {{ epreuve.matiere.niveau }} — {{ epreuve.matiere.label }}
+            </option>
+            {% endif %}
+        </select>
+
+        <label>3. Nom de l'épreuve</label>
+        <input name="nom" value="{{ epreuve.nom if epreuve else '' }}"
+               placeholder="ex: Algèbre Linéaire" required maxlength="150">
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div>
+                <label>4. Session</label>
+                <input name="session" placeholder="ex: Normale 24-25"
+                       value="{{ epreuve.session if epreuve else '' }}" required maxlength="50">
+            </div>
+            <div>
+                <label>5. Année</label>
+                <input type="number" name="annee" min="2000" max="2100"
+                       value="{{ epreuve.annee if epreuve else 2025 }}" required>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div>
+                <label>6. Section</label>
+                <select name="section" required>
+                    <option value="Normale" {% if epreuve and epreuve.section == "Normale" %}selected{% endif %}>Normale</option>
+                    <option value="Rattrapage" {% if epreuve and epreuve.section == "Rattrapage" %}selected{% endif %}>Rattrapage</option>
+                </select>
+            </div>
+            <div>
+                <label>7. Groupes</label>
+                <input name="groupes" placeholder="ex: Tous, A/B, C"
+                       value="{{ epreuve.groupes if epreuve else 'Tous' }}" maxlength="50">
+            </div>
+        </div>
+
+        <label>
+            8. Fichier PDF
+            {% if epreuve %}<small style="color:#888; font-weight:400;">(laisser vide pour garder l'actuel)</small>{% endif %}
+        </label>
+        <input type="file" name="fichier" accept="application/pdf"
+               {% if not epreuve %}required{% endif %}>
+        <!-- Sous le champ du fichier principal -->
+        <label>9. PDF du corrigé (optionnel)</label>
+        <input type="file" name="fichier_corrige" accept="application/pdf">
+
+        {% if epreuve and epreuve.a_corrige %}
+        <p style="font-size:0.85rem; color:#28a745; margin-top:-0.5rem;">
+            ✅ Un corrigé est déjà attaché
+        </p>
+        {% endif %}
+        {% if epreuve %}
+        <p style="font-size:0.85rem; color:#666; margin-top:-0.5rem;">
+            Fichier actuel : <code>{{ epreuve.fichier }}</code> ({{ epreuve.taille }})
+        </p>
+        {% endif %}
+
+        <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+            <button type="submit" class="btn btn-primary" style="flex:1; padding:0.8rem;">
+                {% if epreuve %}💾 Enregistrer{% else %}✅ Ajouter l'épreuve{% endif %}
+            </button>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary"
+               style="padding:0.8rem 1.5rem;">Annuler</a>
+        </div>
+    </form>
+</div>
+
+<script>
+const filiereSelect = document.getElementById('filiere-select');
+const matiereSelect = document.getElementById('matiere-select');
+
+async function chargerMatieres(filiereId, selectedId = null) {
+    if (!filiereId) {
+        matiereSelect.innerHTML = '<option value="">-- Choisir d\'abord une filière --</option>';
+        return;
+    }
+    matiereSelect.innerHTML = '<option value="">Chargement...</option>';
+    try {
+        const res = await fetch(`/api/matieres/${filiereId}`);
+        const data = await res.json();
+        matiereSelect.innerHTML = '<option value="">-- Choisir une matière --</option>';
+        data.matieres.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = `${m.niveau} — ${m.label}`;
+            if (selectedId && m.id == selectedId) opt.selected = true;
+            matiereSelect.appendChild(opt);
+        });
+    } catch (e) {
+        matiereSelect.innerHTML = '<option value="">Erreur de chargement</option>';
+    }
+}
+
+filiereSelect.addEventListener('change', e => chargerMatieres(e.target.value));
+
+{% if epreuve %}
+chargerMatieres({{ epreuve.matiere.filiere.id }}, {{ epreuve.matiere.id }});
+{% endif %}
+</script>
+
+{% endblock %}

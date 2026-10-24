@@ -1,0 +1,82 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Matières{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>📚 Matières</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">← Retour</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>➕ Ajouter une matière</h2>
+    <form method="POST" action="{{ url_for('admin_matiere_new') }}"
+          style="display:flex; gap:1rem; align-items:flex-end; flex-wrap:wrap;">
+        <div style="flex:2; min-width:200px;">
+            <label>Filière</label>
+            <select name="filiere_id" required>
+                {% for f in filieres %}
+                <option value="{{ f.id }}">{{ f.code }} — {{ f.nom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="flex:1; min-width:100px;">
+            <label>Niveau</label>
+            <select name="niveau" required>
+                <option>L1</option><option>L2</option><option>L3</option>
+            </select>
+        </div>
+        <div style="flex:1; min-width:130px;">
+            <label>Slug</label>
+            <input name="slug" required maxlength="50">
+        </div>
+        <div style="flex:2; min-width:200px;">
+            <label>Nom affiché</label>
+            <input name="label" required maxlength="150">
+        </div>
+        <button class="btn btn-primary" style="margin-bottom:1rem;">Ajouter</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>📋 Liste</h2>
+    <table>
+        <thead>
+            <tr><th>Filière</th><th>Niveau</th><th>Slug</th><th>Label</th><th>Épreuves</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for m in matieres %}
+            <tr>
+                <form method="POST" action="{{ url_for('admin_matiere_edit', matiere_id=m.id) }}">
+                    <td>
+                        <select name="filiere_id" style="margin:0;" required>
+                            {% for f in filieres %}
+                            <option value="{{ f.id }}" {% if f.id == m.filiere_id %}selected{% endif %}>{{ f.code }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <select name="niveau" style="margin:0;" required>
+                            {% for n in ['L1','L2','L3'] %}
+                            <option {% if n == m.niveau %}selected{% endif %}>{{ n }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td><input name="slug" value="{{ m.slug }}" style="margin:0;" required></td>
+                    <td><input name="label" value="{{ m.label }}" style="margin:0;" required></td>
+                    <td>{{ m.epreuves|length }}</td>
+                    <td style="white-space:nowrap;">
+                        <button type="submit" class="btn btn-secondary btn-sm">💾</button>
+                </form>
+                        <form method="POST" action="{{ url_for('admin_matiere_delete', matiere_id=m.id) }}"
+                              class="inline" onsubmit="return confirm('Supprimer {{ m.label }} ?');">
+                            <button class="btn btn-danger btn-sm">🗑️</button>
+                        </form>
+                    </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

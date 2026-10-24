@@ -1,0 +1,90 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Utilisateurs{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>👥 Gestion des utilisateurs</h2>
+    <p>Total : {{ users|length }} utilisateur(s)</p>
+</div>
+
+<div class="card">
+    <h2>➕ Créer un utilisateur</h2>
+    <form method="POST" action="{{ url_for('admin_user_new') }}">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div>
+                <label>Nom d'utilisateur</label>
+                <input name="username" required>
+            </div>
+            <div>
+                <label>Email (optionnel)</label>
+                <input type="email" name="email">
+            </div>
+            <div>
+                <label>Mot de passe</label>
+                <input type="password" name="password" required minlength="6">
+            </div>
+            <div>
+                <label>Rôle</label>
+                <select name="role" id="role-select" required>
+                    <option value="user">Utilisateur simple</option>
+                    <option value="moderateur">Modérateur</option>
+                    <option value="admin">Administrateur</option>
+                </select>
+            </div>
+            <div id="filiere-field" style="display:none; grid-column:1/-1;">
+                <label>Filière du modérateur (obligatoire)</label>
+                <select name="filiere_id">
+                    <option value="">-- Choisir --</option>
+                    {% for f in filieres %}
+                    <option value="{{ f.id }}">{{ f.code }} — {{ f.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Créer</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>📋 Liste</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Utilisateur</th><th>Rôle</th><th>Filière</th>
+                <th>Créé par</th><th>Statut</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for u in users %}
+            <tr>
+                <td>{{ u.username }}</td>
+                <td><span class="role role-{{ u.role }}">{{ u.role }}</span></td>
+                <td>{{ u.filiere.code if u.filiere else "—" }}</td>
+                <td>{{ u.created_by.username if u.created_by else "—" }}</td>
+                <td>{% if u.is_active_account %}✅ Actif{% else %}⛔ Inactif{% endif %}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin_user_toggle', user_id=u.id) }}" class="inline">
+                        <button class="btn btn-secondary btn-sm">{{ "Désactiver" if u.is_active_account else "Activer" }}</button>
+                    </form>
+                    {% if u.id != current_user.id %}
+                    <form method="POST" action="{{ url_for('admin_user_delete', user_id=u.id) }}"
+                          class="inline" onsubmit="return confirm('Supprimer {{ u.username }} ?');">
+                        <button class="btn btn-danger btn-sm">🗑️</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+const roleSelect = document.getElementById('role-select');
+const filiereField = document.getElementById('filiere-field');
+
+roleSelect.addEventListener('change', () => {
+    filiereField.style.display = roleSelect.value === 'moderateur' ? 'block' : 'none';
+});
+</script>
+{% endblock %}

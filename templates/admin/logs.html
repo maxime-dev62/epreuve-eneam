@@ -1,0 +1,96 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Logs{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+        <h2>📜 Journal d'activité</h2>
+        <div>
+            <a href="{{ url_for('admin_logs_export') }}" class="btn btn-secondary btn-sm">📥 Export CSV</a>
+            <form method="POST" action="{{ url_for('admin_logs_purge') }}" class="inline"
+                  onsubmit="return confirm('Supprimer les logs de plus de 90 jours ?');">
+                <button class="btn btn-danger btn-sm">🧹 Purger &gt; 90 jours</button>
+            </form>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-sm">← Retour</a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <form method="GET" style="display:flex; gap:1rem; align-items:flex-end; flex-wrap:wrap;">
+        <div style="flex:1; min-width:200px;">
+            <label>Action</label>
+            <select name="action" style="margin:0;">
+                <option value="">Toutes les actions</option>
+                {% for a in actions %}
+                <option value="{{ a }}" {% if a == action_filter %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="flex:1; min-width:200px;">
+            <label>Utilisateur</label>
+            <select name="user_id" style="margin:0;">
+                <option value="">Tous les utilisateurs</option>
+                {% for u in users %}
+                <option value="{{ u.id }}" {% if user_filter == u.id %}selected{% endif %}>
+                    {{ u.username }} ({{ u.role }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button class="btn btn-primary" style="margin-bottom:1rem;">🔍 Filtrer</button>
+        <a href="{{ url_for('admin_logs') }}" class="btn btn-secondary" style="margin-bottom:1rem;">✕ Effacer</a>
+    </form>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Utilisateur</th>
+                <th>Rôle</th>
+                <th>Action</th>
+                <th>Détails</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for log in logs %}
+            <tr>
+                <td style="white-space:nowrap; font-size:0.85rem;">
+                    {{ log.timestamp.strftime("%d/%m/%Y %H:%M") }}
+                </td>
+                <td>{{ log.user.username if log.user else "—" }}</td>
+                <td>
+                    {% if log.user %}
+                    <span class="role role-{{ log.user.role }}">{{ log.user.role }}</span>
+                    {% else %}—{% endif %}
+                </td>
+                <td><code style="font-size:0.82rem;">{{ log.action }}</code></td>
+                <td style="font-size:0.88rem; color:#666;">{{ log.details or "—" }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5" style="text-align:center; padding:2rem; color:#666;">Aucun log.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if pagination.pages > 1 %}
+    <div style="display:flex; justify-content:center; align-items:center; gap:0.5rem; margin-top:1.5rem;">
+        {% if pagination.has_prev %}
+            <a href="{{ url_for('admin_logs', page=pagination.prev_num, action=action_filter, user_id=user_filter) }}"
+               class="btn btn-secondary btn-sm">← Précédent</a>
+        {% endif %}
+        <span style="padding:0.5rem 1rem; font-weight:600;">
+            Page {{ pagination.page }} / {{ pagination.pages }}
+        </span>
+        {% if pagination.has_next %}
+            <a href="{{ url_for('admin_logs', page=pagination.next_num, action=action_filter, user_id=user_filter) }}"
+               class="btn btn-secondary btn-sm">Suivant →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

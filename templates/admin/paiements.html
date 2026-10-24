@@ -1,0 +1,98 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Paiements & Abonnements{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>💰 Paiements & Abonnements</h2>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">← Retour</a>
+</div>
+
+<!-- Paiements en cours -->
+<div class="card">
+    <h3 style="color: #ffc107;">⏳ Paiements à l'unité (En attente)</h3>
+    <table>
+        <thead><tr><th>Date</th><th>Téléphone</th><th>Montant</th><th>Type</th><th>Statut</th></tr></thead>
+        <tbody>
+        {% for p in paiements_en_cours %}
+            <tr>
+                <td>{{ p.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ p.telephone }}</td>
+                <td>{{ p.montant }} FCFA</td>
+                <td>{{ "Épreuve" if p.epreuve_id else "Exercice" }}</td>
+                <td><span class="badge badge-rattrapage">{{ p.statut }}</span></td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5" style="text-align:center;">Aucun paiement en attente.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Paiements terminés -->
+<div class="card">
+    <h3 style="color: #28a745;">✅ Paiements à l'unité (Terminés)</h3>
+    <table>
+        <thead><tr><th>Date</th><th>Téléphone</th><th>Montant</th><th>Type</th><th>Statut</th></tr></thead>
+        <tbody>
+        {% for p in paiements_termines %}
+            <tr>
+                <td>{{ p.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ p.telephone }}</td>
+                <td>{{ p.montant }} FCFA</td>
+                <td>{{ "Épreuve" if p.epreuve_id else "Exercice" }}</td>
+                <td>
+                    {% if p.statut == 'approved' %}<span class="badge badge-normale">Approuvé</span>
+                    {% else %}<span class="badge badge-rattrapage">{{ p.statut }}</span>{% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5" style="text-align:center;">Aucun paiement terminé.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<hr style="margin: 2rem 0; border: 1px solid #ddd;">
+
+<!-- Abonnements en cours -->
+<div class="card">
+    <h3 style="color: #ffc107;">⏳ Abonnements (En attente)</h3>
+    <table>
+        <thead><tr><th>Date</th><th>Téléphone</th><th>Statut</th></tr></thead>
+        <tbody>
+        {% for a in abos_en_cours %}
+            <tr>
+                <td>{{ a.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ a.telephone }}</td>
+                <td><span class="badge badge-rattrapage">{{ a.statut }}</span></td>
+            </tr>
+        {% else %}
+            <tr><td colspan="3" style="text-align:center;">Aucun abonnement en attente.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Abonnements terminés -->
+<div class="card">
+    <h3 style="color: #28a745;">✅ Abonnements (Terminés)</h3>
+    <table>
+        <thead><tr><th>Date</th><th>Téléphone</th><th>Compte généré</th><th>Statut</th></tr></thead>
+        <tbody>
+        {% for a in abos_termines %}
+            <tr>
+                <td>{{ a.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ a.telephone }}</td>
+                <td>{{ a.username_genere or "—" }}</td>
+                <td>
+                    {% if a.statut == 'approved' %}<span class="badge badge-normale">Approuvé</span>
+                    {% else %}<span class="badge badge-rattrapage">{{ a.statut }}</span>{% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="4" style="text-align:center;">Aucun abonnement terminé.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

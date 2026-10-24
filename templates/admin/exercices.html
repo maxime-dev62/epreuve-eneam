@@ -1,0 +1,98 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Exercices{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="stats">
+    <div class="stat-card">
+        <h3>{{ stats.total_exercices }}</h3>
+        <p>Exercices</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.avec_corrige }}</h3>
+        <p>Avec corrigé</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.sans_corrige }}</h3>
+        <p>Sans corrigé</p>
+    </div>
+</div>
+
+<!-- Header + recherche -->
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+        <h2 style="margin:0;">✏️ Tous les exercices</h2>
+        <a href="{{ url_for('modo_exercice_new') }}" class="btn btn-primary">➕ Nouvel exercice</a>
+    </div>
+
+    <form method="GET" class="search-bar">
+        <input type="text" name="q" value="{{ q }}"
+               placeholder="Rechercher (titre, matière, filière)...">
+        <button type="submit" class="btn btn-secondary">🔍 Chercher</button>
+        {% if q %}
+        <a href="{{ url_for('admin_exercices') }}" class="btn btn-secondary">✕ Effacer</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Tableau -->
+<div class="card">
+    {% if exercices %}
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Titre</th>
+                    <th>Filière</th>
+                    <th>Niv.</th>
+                    <th>Matière</th>
+                    <th>Année</th>
+                    <th>Corrigé</th>
+                    <th>Ajouté par</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for ex in exercices %}
+                <tr>
+                    <td>{{ ex.titre }}</td>
+                    <td><strong>{{ ex.matiere.filiere.code }}</strong></td>
+                    <td>{{ ex.matiere.niveau }}</td>
+                    <td>{{ ex.matiere.label }}</td>
+                    <td>{{ ex.annee or "—" }}</td>
+                    <td>
+                        {% if ex.a_corrige %}
+                            <span class="badge badge-normale">✅ Oui</span>
+                        {% else %}
+                            <span class="badge badge-rattrapage">⏳ Non</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ ex.auteur.username if ex.auteur else "—" }}</td>
+                    <td style="white-space:nowrap;">
+                        <a href="{{ url_for('modo_exercice_edit', exercice_id=ex.id) }}"
+                           class="btn btn-secondary btn-sm" title="Modifier">✏️</a>
+                        <form method="POST"
+                              action="{{ url_for('admin_exercice_delete', exercice_id=ex.id) }}"
+                              class="inline"
+                              onsubmit="return confirm('Supprimer « {{ ex.titre }} » ?');">
+                            <button class="btn btn-danger btn-sm">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="text-align:center; padding:2rem; color:#666;">
+        {% if q %}
+            Aucun exercice ne correspond à « {{ q }} ».
+        {% else %}
+            Aucun exercice pour le moment.
+        {% endif %}
+    </p>
+    {% endif %}
+</div>
+
+{% endblock %}
