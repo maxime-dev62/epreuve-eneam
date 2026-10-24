@@ -1,0 +1,109 @@
+{% extends "modo/base_modo.html" %}
+{% block title %}{% if exercice %}Modifier{% else %}Nouvel{% endif %} exercice{% endblock %}
+
+{% block content %}
+
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+    <h2>{% if exercice %}✏️ Modifier l'exercice{% else %}➕ Nouvel exercice{% endif %}</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+
+        <label>1. Filière</label>
+        <select id="filiere-select" required>
+            <option value="">-- Choisir --</option>
+            {% for f in filieres %}
+            <option value="{{ f.id }}"
+                {% if exercice and exercice.matiere.filiere.id == f.id %}selected{% endif %}>
+                {{ f.code }} — {{ f.nom }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <label>2. Matière</label>
+        <select name="matiere_id" id="matiere-select" required>
+            <option value="">-- Choisir d'abord une filière --</option>
+            {% if exercice %}
+            <option value="{{ exercice.matiere.id }}" selected>
+                {{ exercice.matiere.niveau }} — {{ exercice.matiere.label }}
+            </option>
+            {% endif %}
+        </select>
+
+        <label>3. Titre</label>
+        <input name="titre" value="{{ exercice.titre if exercice else '' }}" required maxlength="150">
+
+        <label>4. Description (optionnel)</label>
+        <textarea name="description" rows="3"
+                  placeholder="Brève description de l'exercice">{{ exercice.description if exercice else '' }}</textarea>
+
+        <label>5. Année (optionnel)</label>
+        <input type="number" name="annee" min="2000" max="2100"
+               value="{{ exercice.annee if exercice and exercice.annee else '' }}">
+
+        <label>6. PDF de l'énoncé {% if exercice %}(laisser vide pour garder l'actuel){% endif %}</label>
+        <input type="file" name="fichier" accept="application/pdf" {% if not exercice %}required{% endif %}>
+
+        <label>7. PDF du corrigé (optionnel)</label>
+        <input type="file" name="fichier_corrige" accept="application/pdf">
+
+        {% if exercice and exercice.a_corrige %}
+        <p style="font-size:0.85rem; color:#28a745; margin-top:-0.5rem;">
+            ✅ Un corrigé est déjà attaché
+        </p>
+        {% endif %}
+
+        <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+            <button type="submit" class="btn btn-primary" style="flex:1; padding:0.8rem;">
+                {% if exercice %}💾 Enregistrer{% else %}✅ Ajouter{% endif %}
+            </button>
+            <a href="{{ url_for('modo_dashboard') }}" class="btn btn-secondary"
+               style="padding:0.8rem 1.5rem;">Annuler</a>
+        </div>
+    </form>
+</div>
+
+<div id="form-data"
+     data-edit-mode="{% if exercice %}1{% else %}0{% endif %}"
+     data-filiere-id="{% if exercice %}{{ exercice.matiere.filiere.id }}{% endif %}"
+     data-matiere-id="{% if exercice %}{{ exercice.matiere.id }}{% endif %}"
+     style="display:none;"></div>
+
+<script>
+(function() {
+    const filiereSelect = document.getElementById('filiere-select');
+    const matiereSelect = document.getElementById('matiere-select');
+    const formData = document.getElementById('form-data');
+
+    async function chargerMatieres(filiereId, selectedId) {
+        if (!filiereId) {
+            matiereSelect.innerHTML = '<option value="">-- Choisir une filière --</option>';
+            return;
+        }
+        matiereSelect.innerHTML = '<option value="">Chargement...</option>';
+        try {
+            const res = await fetch('/api/matieres/' + filiereId);
+            const data = await res.json();
+            matiereSelect.innerHTML = '<option value="">-- Choisir une matière --</option>';
+            data.matieres.forEach(function(m) {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.niveau + ' — ' + m.label;
+                if (selectedId && m.id == selectedId) opt.selected = true;
+                matiereSelect.appendChild(opt);
+            });
+        } catch (e) {
+            matiereSelect.innerHTML = '<option value="">Erreur</option>';
+        }
+    }
+
+    filiereSelect.addEventListener('change', function(e) {
+        chargerMatieres(e.target.value, null);
+    });
+
+    if (formData.dataset.editMode === '1') {
+        chargerMatieres(formData.dataset.filiereId, formData.dataset.matiereId);
+    }
+})();
+</script>
+
+{% endblock %}

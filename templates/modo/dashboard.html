@@ -1,0 +1,80 @@
+{% extends "modo/base_modo.html" %}
+{% block title %}Mon espace{% endblock %}
+
+{% block content %}
+<div class="stats">
+    <div class="stat-card">
+        <h3>{{ stats.total_epreuves }}</h3>
+        <p>Mes épreuves</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ filiere.code }}</h3>
+        <p>{{ filiere.nom }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>📄 Mes épreuves ajoutées</h2>
+        <a href="{{ url_for('modo_epreuve_new') }}" class="btn btn-primary">➕ Nouvelle épreuve</a>
+        <a href="{{ url_for('modo_exercice_new') }}" class="btn btn-secondary">➕ Nouvel exercice</a>
+    </div>
+
+    {% if epreuves %}
+    <table>
+        <thead>
+            <tr><th>Nom</th><th>Matière</th><th>Session</th><th>Section</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for ep in epreuves %}
+            <tr>
+                <td>{{ ep.nom }}</td>
+                <td>{{ ep.matiere.niveau }} — {{ ep.matiere.label }}</td>
+                <td>{{ ep.session }}</td>
+                <td>{{ ep.section }}</td>
+                <td>
+                    <a href="{{ url_for('modo_epreuve_edit', epreuve_id=ep.id) }}" class="btn btn-secondary btn-sm">✏️</a>
+                    <form method="POST" action="{{ url_for('modo_epreuve_delete', epreuve_id=ep.id) }}"
+                          class="inline" onsubmit="return confirm('Supprimer ?');">
+                        <button class="btn btn-danger btn-sm">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align:center; padding:2rem; color:#666;">
+        Vous n'avez encore ajouté aucune épreuve.
+    </p>
+    {% endif %}
+</div>
+<div class="card">
+    <h2>✏️ Mes exercices</h2>
+    {% if current_user.exercices %}
+    <table>
+        <thead>
+            <tr><th>Titre</th><th>Matière</th><th>Corrigé</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for ex in current_user.exercices %}
+            <tr>
+                <td>{{ ex.titre }}</td>
+                <td>{{ ex.matiere.niveau }} — {{ ex.matiere.label }}</td>
+                <td>{% if ex.a_corrige %}✅{% else %}⏳{% endif %}</td>
+                <td>
+                    <a href="{{ url_for('modo_exercice_edit', exercice_id=ex.id) }}" class="btn btn-secondary btn-sm">✏️</a>
+                    <form method="POST" action="{{ url_for('modo_exercice_delete', exercice_id=ex.id) }}"
+                          class="inline" onsubmit="return confirm('Supprimer ?');">
+                        <button class="btn btn-danger btn-sm">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align:center; padding:2rem; color:#666;">Aucun exercice ajouté.</p>
+    {% endif %}
+</div>
+{% endblock %}
