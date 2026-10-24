@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}À propos{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <h1>ℹ️ À propos</h1>
+    <p class="page-intro">La plateforme des épreuves de l'ENEAM</p>
+
+    <div class="about-content">
+        <div class="about-block">
+            <h2>🎯 Notre mission</h2>
+            <p>Faciliter l'accès aux anciennes épreuves de l'École Nationale d'Économie Appliquée et de Management (ENEAM) pour tous les étudiants, en centralisant les documents en un seul endroit.</p>
+        </div>
+
+        <div class="about-block">
+            <h2>📚 Ce que nous offrons</h2>
+            <ul>
+                <li>Une bibliothèque d'épreuves classées par filière et par niveau</li>
+                <li>Une recherche rapide par matière, section ou année</li>
+                <li>Des téléchargements PDF gratuits et illimités</li>
+                <li>Une mise à jour régulière par notre équipe</li>
+            </ul>
+        </div>
+
+        <div class="about-block">
+            <h2>👥 Notre équipe</h2>
+            <p>Le site est maintenu par des <strong>administrateurs</strong> et des <strong>modérateurs</strong> assignés à chaque filière, qui veillent à la qualité et à la mise à jour des documents.</p>
+        </div>
+
+        <div class="about-block">
+            <h2>📊 Chiffres</h2>
+            <div class="about-stats">
+                <div><strong>{{ stats.total_epreuves if stats else '—' }}</strong><span>Épreuves</span></div>
+                <div><strong>{{ stats.total_filieres if stats else '—' }}</strong><span>Filières</span></div>
+                <div><strong>{{ stats.total_matieres if stats else '—' }}</strong><span>Matières</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Paiement - {{ item.nom }}{% endblock %}
+
+{% block content %}
+<section class="page-section" style="max-width:600px;">
+    <h1>💳 Paiement de l'épreuve</h1>
+
+    <div class="card" style="padding:1.5rem; margin:1.5rem 0;">
+        <p><strong>Épreuve :</strong> {{ item.nom }}</p>
+        <p><strong>Matière :</strong> {{ item.matiere.label }} ({{ item.matiere.niveau }})</p>
+        <p><strong>Filière :</strong> {{ item.matiere.filiere.nom }}</p>
+        <p><strong>Session :</strong> {{ item.session }}</p>
+        <hr>
+        <p style="text-align:center; color:var(--gray-600);">
+            Soutenez le projet en choisissant votre montant (minimum {{ prix_minimum }} FCFA).
+        </p>
+    </div>
+
+    <form method="POST">
+        <label>1. Montant à payer (FCFA)</label>
+        <input type="number" name="montant" required 
+               min="{{ prix_minimum }}" value="{{ prix_minimum }}" step="50"
+               style="font-size:1.2rem; font-weight:bold; color:var(--primary);">
+
+        <label>2. Choisissez votre opérateur</label>
+        <select name="operateur" required>
+            <option value="">-- Choisir --</option>
+            <option value="mtn">📱 MTN Mobile Money</option>
+            <option value="moov">📱 Moov Money</option>
+            <option value="celtiis">📱 Celtiis Cash</option>
+        </select>
+
+        <label>3. Numéro de téléphone</label>
+        <input type="tel" name="telephone" required
+               pattern="[0-9]{10}" placeholder="ex: 0162043243">
+
+        <p style="font-size:0.9rem; color:#666; margin:1rem 0;">
+            ⚠️ Vous recevrez un SMS pour confirmer le paiement.
+        </p>
+
+        <button type="submit" class="btn btn-primary" style="width:100%; padding:1rem;">
+            💳 Payer
+        </button>
+    </form>
+</section>
+{% endblock %}

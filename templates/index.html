@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Épreuves ENEAM - Télécharger{% endblock %}
+
+{% block content %}
+
+<!-- =====================================================
+     HERO + FILTRES
+     ===================================================== -->
+<section id="accueil" class="hero">
+    <div class="hero-content">
+        <h1>📚 Télécharger des Épreuves</h1>
+        <p>Trouvez toutes les anciennes épreuves de l'ENEAM et leur corrigé</p>
+        
+        <div class="filters" autocomplete="off">
+            <select id="filiere-filter" autocomplete="off">
+                <option value="">Toutes les filières</option>
+                {% for key, label in filieres.items() %}
+                <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <select id="niveau-filter" autocomplete="off">
+                <option value="">Tous les niveaux</option>
+                <option value="L1">L1</option>
+                <option value="L2">L2</option>
+                <option value="L3">L3</option>
+                <option value="Master">Master</option>
+            </select>
+
+            <select id="section-filter" autocomplete="off">
+                <option value="">Toutes les sections</option>
+                <option value="Normale">Normale</option>
+                <option value="Rattrapage">Rattrapage</option>
+            </select>
+
+            <input type="text" id="matiere-filter" placeholder="Matière..." autocomplete="off">
+            <input type="number" id="annee-filter" placeholder="Année..." min="2000" max="2030" autocomplete="off">
+
+            <button id="search-btn">🔍 Rechercher</button>
+        </div>
+        <p id="search-msg" class="search-msg"></p>
+    </div>
+</section>
+
+<div style="margin-top: 2rem; text-align: center;">
+    {% if current_user.is_authenticated %}
+        {# Si c'est un admin ou un modérateur #}
+        {% if current_user.is_admin or current_user.is_moderateur %}
+            <p style="color: var(--primary); font-weight: bold;">
+                👑 Vous êtes connecté en tant que {{ current_user.role|capitalize }}
+            </p>
+            
+        {# Si c'est un utilisateur simple (abonné) #}
+        {% elif current_user.is_simple_user %}
+            {% if current_user.expire_le %}
+                {% set jours_restants = (current_user.expire_le - now).days %}
+                {% if jours_restants > 0 %}
+                    <div style="background: #d4edda; color: #155724; padding: 1rem; border-radius: 8px; display: inline-block;">
+                        ⭐ <strong>Abonnement actif</strong> : Il vous reste <strong>{{ jours_restants }} jour(s)</strong>.
+                    </div>
+                {% else %}
+                    <div style="background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 8px; display: inline-block;">
+                        ⚠️ <strong>Abonnement expiré</strong>. Veuillez le renouveler.
+                    </div>
+                {% endif %}
+            {% else %}
+                <div style="background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 8px; display: inline-block;">
+                    ⚠️ Aucun abonnement actif.
+                </div>
+            {% endif %}
+        {% endif %}
+        
+    {% else %}
+        {# Si le visiteur n'est pas connecté, on affiche le bouton #}
+        <a href="{{ url_for('abonnement') }}" class="btn btn-primary btn-lg" style="background: #ffc107; color: #333;">
+            ⭐ Devenir Premium (Accès illimité 30 jours)
+        </a>
+    {% endif %}
+</div>
+
+<!-- =====================================================
+     FILIÈRES
+     ===================================================== -->
+<section id="categories" class="categories" autocomplete="off">
+    <h2>🎓 Filières</h2>
+    <div class="categorie">
+        <div class="filiere-grid" autocomplete="off">
+
+            {% for code, nom in filieres.items() %}
+            <div class="fil">
+                <button class="btn" data-filiere="{{ code }}">{{ nom }}</button>
+                <div class="sous-btn">
+
+                    {% for niveau in ['L1', 'L2', 'L3'] %}
+                    <details>
+                        <summary>Licence {{ niveau[1] }}</summary>
+                        <div>
+                            {% if (code, niveau) in matieres %}
+                                {% for mid, mlabel in matieres[(code, niveau)] %}
+                                <a href="#{{ mid }}" class="matieres">{{ mlabel }}</a>
+                                {% endfor %}
+                            {% else %}
+                                <p>Épreuves à venir ...</p>
+                            {% endif %}
+                        </div>
+                    </details>
+                    {% endfor %}
+
+                </div>
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+</section>
+
+<!-- =====================================================
+     ÉPREUVES
+     ===================================================== -->
+<section id="epreuves" class="epreuves">
+
+    {% for code, nom in filieres.items() %}
+    <div id="{{ code }}" data-filiere="{{ code }}" class="filiere-section" style="display:none;">
+        <h3>{{ nom }}</h3>
+
+        {% for niveau in ['L1', 'L2', 'L3'] %}
+        <div class="niveau-section" data-niveau="{{ niveau }}">
+            <h4>Licence {{ niveau[1] }}</h4>
+
+            {% if (code, niveau) in matieres %}
+                {% for mid, mlabel in matieres[(code, niveau)] %}
+                <div id="{{ mid }}" class="filliere">
+                    {% for ep in epreuves_par_id.get(mid, []) %}
+                    <div class="epreuve-card"
+                         data-section="{{ ep.section }}"
+                         data-matiere="{{ ep.matiere }}"
+                         data-annee="{{ ep.annee }}">
+
+                        <p><strong>Nom :</strong> {{ ep.nom }}</p>
+                        <p><strong>Session :</strong> {{ ep.session }}</p>
+                        <p><strong>Groupes :</strong> {{ ep.groupes }}</p>
+                        <p><strong>Taille :</strong> {{ ep.taille }}</p>
+                        <p class="view">{{ ep.nom }} — {{ ep.session }}</p>
+                        {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('telecharger_epreuve', epreuve_id=ep.id) }}">
+                            <button>⬇️ Télécharger</button>
+                        </a>
+                        {% else %}
+                            {% if ep.niveau == "L1" or ep.niveau == "L2" or ep.niveau == "L3" %}
+                                <a href="{{ url_for('payer_epreuve', epreuve_id=ep.id) }}">
+                                <button class="btn-payant">💰 Payer (dès 150 FCFA)</button>
+                            </a>
+                            {% else %}
+                                <a href="{{ url_for('telecharger_epreuve', epreuve_id=ep.id) }}">
+                                    <button>⬇️ Télécharger</button>
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            {% endif %}
+
+        </div>
+        {% endfor %}
+
+    </div>
+    {% endfor %}
+
+</section>
+
+<!-- =====================================================
+     FAQ
+     ===================================================== -->
+<section id="faq">
+    <h2 align="center" class="titre">❓ AIDE ET FAQ</h2>
+    <div class="features">
+        <div class="feature">
+            <span class="feature-icon">📄</span>
+            <h3>PDF téléchargeables</h3>
+            <p>Toutes les épreuves en format PDF</p>
+        </div>
+        <div class="feature">
+            <span class="feature-icon">🎓</span>
+            <h3>Organisé par filière</h3>
+            <p>IG, GFC, Planification et plus</p>
+        </div>
+        <div class="feature">
+            <span class="feature-icon">⚡</span>
+            <h3>Rapide et simple</h3>
+            <p>Recherche instantanée</p>
+        </div>
+    </div>
+    <ul>
+        <li>
+            <h3 class="titre2">Comment télécharger une épreuve ? </h3>
+            <p>Cliquez simplement sur le bouton "Télécharger" à côté de l'épreuve souhaitée. Le fichier sera directement téléchargé sur votre appareil une fois que vous aurezpayé.</p>
+        </li>
+        <li>
+            <h3 class="titre2">Que faire si je ne trouve pas une épreuve ?</h3>
+            <p>Utilisez la barre de recherche en haut de la page. Si vous ne la trouvez toujours pas, <a href="mailto:contact@eneam.edu">CONTACTEZ-NOUS</a>.</p>
+        </li>
+        <li>
+            <h3 class="titre2">Quels formats de fichiers sont disponibles ?</h3>
+            <p>Les fichiers sont disponibles en <mark>PDF</mark>, facilement lisibles sur la plupart des appareils.</p>
+        </li>
+        <li>
+            <h3 class="titre2">Comment contacter le support ?</h3>
+            <p>Pour contacter le support, cliquez sur le lien dans la section Contact ci-dessous.</p>
+        </li>
+    </ul>
+</section>
+
+<!-- =====================================================
+     CONTACT
+     ===================================================== -->
+<section id="contact" class="contact">
+    <h2>📞 Contact</h2>
+    <div class="contact-links">
+        <p>Email : <a href="mailto:djosmaxi@gmail.com">contact@eneam.edu</a></p>
+        <p>Téléphone : <a href="tel:+2290162043243">+229 0162043243</a> <span>/</span> <a href="tel:+2290149424260">+229 0149424260</a></p>
+    </div>
+</section>
+
+{% endblock %}

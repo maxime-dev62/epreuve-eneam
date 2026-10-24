@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Exercices & Corrigés{% endblock %}
+
+{% block content %}
+
+<!-- En-tête de la page -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>✏️ Exercices & Corrigés</h1>
+        <p>Entraîne-toi avec les exercices et leurs corrections</p>
+    </div>
+</section>
+
+<!-- Section des exercices -->
+<section class="epreuves" style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
+    
+    {% if exercices_par_id %}
+        {% for filiere_code, filiere_nom in filieres.items() %}
+            
+            {# On vérifie si cette filière a des exercices quelque part #}
+            {% set ns = namespace(a_des_exos=false) %}
+            {% for niveau in ['L1', 'L2', 'L3'] %}
+                {% if (filiere_code, niveau) in matieres %}
+                    {% for mid, mlabel in matieres[(filiere_code, niveau)] %}
+                        {% if mid in exercices_par_id %}
+                            {% set ns.a_des_exos = true %}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+
+            {# Si la filière a des exercices, on l'affiche #}
+            {% if ns.a_des_exos %}
+            <div class="filiere-bloc" style="margin-bottom: 3rem;">
+                <h2 style="color: var(--primary); border-bottom: 3px solid var(--primary); padding-bottom: 0.5rem; margin-bottom: 1.5rem;">
+                    🎓 {{ filiere_nom }}
+                </h2>
+
+                {% for niveau in ['L1', 'L2', 'L3'] %}
+                    {% set niveaux_a_afficher = [] %}
+                    
+                    {# On vérifie si ce niveau a des exercices #}
+                    {% if (filiere_code, niveau) in matieres %}
+                        {% for mid, mlabel in matieres[(filiere_code, niveau)] %}
+                            {% if mid in exercices_par_id %}
+                                {% set _ = niveaux_a_afficher.append(mid) %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+
+                    {# Si le niveau a des exercices, on l'affiche #}
+                    {% if niveaux_a_afficher %}
+                    <div class="niveau-bloc" style="margin-bottom: 2rem;">
+                        <h3 style="color: #333; font-size: 1.3rem; margin-bottom: 1rem;">
+                            📚 Licence {{ niveau[1] }}
+                        </h3>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                            {% for mid, mlabel in matieres[(filiere_code, niveau)] %}
+                                {% if mid in exercices_par_id %}
+                                    {% for ex in exercices_par_id[mid] %}
+                                    <div class="epreuve-card" style="border-left: 4px solid #4a9eff; background: white; padding: 1.2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                                        
+                                        <!-- Titre et infos -->
+                                        <h4 style="margin: 0 0 0.5rem 0; color: #1e1e2f;">{{ ex.titre }}</h4>
+                                        <p style="font-size: 0.9rem; color: #666; margin: 0 0 0.3rem 0;">
+                                            <strong>Matière :</strong> {{ mlabel }}
+                                        </p>
+                                        {% if ex.annee %}
+                                        <p style="font-size: 0.9rem; color: #666; margin: 0 0 0.3rem 0;">
+                                            <strong>Année :</strong> {{ ex.annee }}
+                                        </p>
+                                        {% endif %}
+                                        {% if ex.description %}
+                                        <p style="font-size: 0.85rem; color: #555; font-style: italic; margin-top: 0.5rem;">
+                                            {{ ex.description }}
+                                        </p>
+                                        {% endif %}
+
+                                        <!-- Badge corrigé -->
+                                        <div style="margin-top: 1rem;">
+                                            {% if ex.a_corrige %}
+                                                <span style="background: #d4edda; color: #155724; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">
+                                                    ✅ Corrigé inclus
+                                                </span>
+                                            {% else %}
+                                                <span style="background: #fff3cd; color: #856404; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">
+                                                    ⏳ Sans corrigé
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('telecharger_exercice', exercice_id=ex.id) }}">
+                            <button>⬇️ Télécharger</button>
+                        </a>
+                        {% else %}
+                            {% if ex.niveau == "L1" or ex.niveau == "L2" or ex.niveau == "L3" %}
+                                <a href="{{ url_for('payer_exercice', exercice_id=ex.id) }}">
+                                <button class="btn-payant">💰 Payer (dès 150 FCFA)</button>
+                            </a>
+                            {% else %}
+                                <a href="{{ url_for('telecharger_exercice', exercice_id=ex.id) }}">
+                                    <button>⬇️ Télécharger</button>
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <!-- Si la base est totalement vide -->
+        <div style="text-align: center; padding: 4rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <h2 style="color: #666;">Aucun exercice disponible pour le moment.</h2>
+            <p style="color: #999;">Revenez plus tard !</p>
+        </div>
+    {% endif %}
+
+</section>
+{% endblock %}

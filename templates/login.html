@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Connexion{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h1>Connexion</h1>
+        <p>Accédez à votre espace ENEAM</p>
+
+        <form method="POST">
+            <label>Nom d'utilisateur</label>
+            <input type="text" name="username" required autofocus>
+
+            <label>Mot de passe</label>
+            <input type="password" name="password" required>
+
+            <button type="submit" class="btn btn-primary">Se connecter</button>
+        </form>
+
+        <p class="auth-hint">
+            Pas de compte ? Contactez l'administration.
+        </p>
+    </div>
+</div>
+{% endblock %}

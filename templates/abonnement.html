@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Abonnement Premium{% endblock %}
+{% block content %}
+<section class="page-section" style="max-width:600px; text-align:center;">
+    <h1>⭐ Abonnement Premium</h1>
+    <p>Accédez à <strong>toutes les épreuves et tous les corrigés</strong> sans limite pendant 30 jours !</p>
+    
+    <div class="card" style="margin:2rem 0; padding:2rem;">
+        <h2 style="color:var(--primary); font-size:2.5rem; margin:0;">{{ prix }} FCFA</h2>
+        <p style="color:#666;">pour 30 jours d'accès illimité</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('payer_abonnement') }}">
+        <label>Votre numéro Mobile Money</label>
+        <input type="tel" name="telephone" required pattern="[0-9]{10}" placeholder="ex: 0162043243" style="text-align:center; font-size:1.2rem;">
+        
+        <button type="submit" class="btn btn-primary" style="width:100%; padding:1rem; margin-top:1rem;">
+            💳 Payer l'abonnement
+        </button>
+    </form>
+    
+    <p style="margin-top:1rem; font-size:0.9rem; color:#666;">
+        Dès que le paiement est validé, un compte avec un mot de passe vous sera généré automatiquement.
+    </p>
+</section>
+{% endblock %}
