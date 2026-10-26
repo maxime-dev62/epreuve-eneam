@@ -30,11 +30,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 # On crée le client seulement si les clés existent
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-app = Flask(__name__, 
-            template_folder=os.path.join(BASE_DIR, 'templates'),
-            static_folder=os.path.join(BASE_DIR, 'static'))
+app = Flask(__name__)    
 # ==================================================================
 # CONFIGURATION DE LA BASE DE DONNÉES (Hybride Local / Prod)
 # ==================================================================
