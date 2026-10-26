@@ -3,7 +3,6 @@ Flask-Login
 Flask-SQLAlchemy
 python-dotenv
 psycopg2-binary
-supabase
 requests
 gunicorn
 Werkzeug
