@@ -42,6 +42,8 @@
     </div>
 </section>
 
+<div><a href="{{ url_for('liste_exercices') }}" class="btn-nav"><button>Voir les exercices</button></a></div>
+
 <div style="margin-top: 2rem; text-align: center;">
     {% if current_user.is_authenticated %}
         {# Si c'est un admin ou un modérateur #}
