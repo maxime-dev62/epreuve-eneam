@@ -1228,8 +1228,9 @@ def telecharger_exercice(exercice_id):
 
     # Génère le ZIP
     zip_data = generer_zip_telechargement(
-        fichier_principal=exercice.fichier,
-        fichier_corrige=exercice.fichier_corrige
+        fichier_url=exercice.fichier,
+        fichier_corrige_url=exercice.fichier_corrige,
+        nom_base=exercice.nom.replace(' ', '_')
     )
     
     nom_fichier = f"Exercice_{exercice.titre.replace(' ', '_')}.zip"
@@ -1399,8 +1400,8 @@ def modo_exercice_edit(exercice_id):
                 # 1. Supprimer l'ancien corrigé de Supabase
                 if exercice.fichier_corrige and exercice.fichier_corrige.startswith("http"):
                     try:
-                        ancien_corrige_nom = exercice.fichier_corrige.split("/")[-1]
-                        supabase.storage.from_("epreuves").remove([ancien_corrige_nom])
+                        ancien_nom = epreuve.fichier.split("/")[-1]
+                        supprimer_de_supabase(ancien_nom)
                     except Exception as e:
                         print(f"Note: impossible de supprimer l'ancien corrigé : {e}")
 
@@ -1409,12 +1410,7 @@ def modo_exercice_edit(exercice_id):
                 corrige_content = corrige.read()
 
                 try:
-                    supabase.storage.from_("epreuves").upload(
-                        path=unique_corrige,
-                        file=corrige_content,
-                        file_options={"content-type": "application/pdf"}
-                    )
-                    exercice.fichier_corrige = supabase.storage.from_("epreuves").get_public_url(unique_corrige)
+                    exercice.fichier_corrige = upload_vers_supabase(unique_name, file_content)
                 except Exception as e:
                     flash(f"Erreur d'upload du corrigé : {e}", "error")
                     return redirect(url_for("modo_exercice_edit", exercice_id=exercice.id))
@@ -1579,8 +1575,9 @@ def telecharger_epreuve(epreuve_id):
 
     # Si c'est gratuit ou déjà payé, on génère le ZIP
     zip_data = generer_zip_telechargement(
-        fichier_principal=epreuve.fichier, 
-        fichier_corrige=epreuve.fichier_corrige
+        fichier_url=epreuve.fichier, 
+        fichier_corrige_url=epreuve.fichier_corrige,
+        nom_base=epreuve.nom.replace(' ', '_')
     )
     nom_fichier = f"{epreuve.nom.replace(' ', '_')}_{epreuve.session}.zip"
     return send_file(zip_data, mimetype='application/zip', as_attachment=True, download_name=nom_fichier)
