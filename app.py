@@ -15,20 +15,12 @@ from flask import json as json
 
 from models import db, User, Filiere, Matiere, Epreuve, LogAction,Exercice,Paiement,Abonnement
 
+from supabase import create_client, Client
+
 from datetime import datetime,timedelta
 
 from flask_migrate import Migrate
 load_dotenv()
-
-import os
-from supabase import create_client, Client
-
-# Initialisation de Supabase (récupère les infos depuis ton .env)
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-
-# On crée le client seulement si les clés existent
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
 app = Flask(__name__)    
 # ==================================================================
@@ -89,6 +81,13 @@ login_manager = LoginManager(app)
 login_manager.login_view = "login"
 login_manager.login_message = "Veuillez vous connecter."
 login_manager.login_message_category = "error"
+
+# Initialisation de Supabase (récupère les infos depuis ton .env)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# On crée le client seulement si les clés existent
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
 
 @login_manager.user_loader
