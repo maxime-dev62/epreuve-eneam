@@ -281,13 +281,37 @@ login_manager.login_message = "Veuillez vous connecter."
 login_manager.login_message_category = "error"
 
 # Initialisation de Supabase (récupère les infos depuis ton .env)
+
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-# On crée le client seulement si les clés existent
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
+def upload_vers_supabase(nom_fichier, contenu_fichier):
+    """Envoie un fichier sur Supabase Storage et retourne son URL publique."""
+    url = f"{SUPABASE_URL}/storage/v1/object/epreuves/{nom_fichier}"
+    headers = {
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/pdf"
+    }
+    response = requests.post(url, headers=headers, data=contenu_fichier)
+    if response.status_code == 200:
+        return f"{SUPABASE_URL}/storage/v1/object/public/epreuves/{nom_fichier}"
+    else:
+        raise Exception(f"Erreur Supabase : {response.text}")
 
+def supprimer_de_supabase(nom_fichier):
+    """Supprime un fichier de Supabase Storage."""
+    url = f"{SUPABASE_URL}/storage/v1/object/epreuves/{nom_fichier}"
+    headers = {"Authorization": f"Bearer {SUPABASE_KEY}"}
+    requests.delete(url, headers=headers)
 
+def telecharger_depuis_supabase(nom_fichier):
+    """Télécharge un fichier depuis Supabase Storage."""
+    url = f"{SUPABASE_URL}/storage/v1/object/epreuves/{nom_fichier}"
+    headers = {"Authorization": f"Bearer {SUPABASE_KEY}"}
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.content
+    raise Exception("Fichier introuvable sur Supabase")
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -358,10 +382,8 @@ def generer_zip_telechargement(fichier_url, fichier_corrige_url=None, nom_base="
         # 1. Télécharger et ajouter l'énoncé
         if fichier_url:
             try:
-                # On extrait le nom du fichier depuis l'URL Supabase
                 nom_fichier_supa = fichier_url.split("/")[-1]
-                # On le télécharge depuis le bucket
-                response = supabase.storage.from_("epreuves").download(nom_fichier_supa)
+                response = telecharger_depuis_supabase(nom_fichier_supa)
                 zf.writestr(f"{nom_base}_Enonce.pdf", response)
             except Exception as e:
                 print(f"⚠️ Impossible de télécharger l'énoncé : {e}")
@@ -370,13 +392,14 @@ def generer_zip_telechargement(fichier_url, fichier_corrige_url=None, nom_base="
         if fichier_corrige_url:
             try:
                 nom_corrige_supa = fichier_corrige_url.split("/")[-1]
-                response_corrige = supabase.storage.from_("epreuves").download(nom_corrige_supa)
+                response_corrige = telecharger_depuis_supabase(nom_corrige_supa)
                 zf.writestr(f"{nom_base}_Corrige.pdf", response_corrige)
             except Exception as e:
                 print(f"⚠️ Impossible de télécharger le corrigé : {e}")
                 
     memory_file.seek(0)
     return memory_file
+  
 def telephone_a_paye(telephone, epreuve_id):
     """Vérifie si ce numéro a déjà payé pour cette épreuve."""
     if not telephone:
@@ -825,12 +848,7 @@ def modo_epreuve_new():
             taille_str = f"{taille_ko:.0f} Ko" if taille_ko < 1024 else f"{taille_ko/1024:.1f} Mo"
 
             try:
-                supabase.storage.from_("epreuves").upload(
-                    path=unique_name,
-                    file=file_content,
-                    file_options={"content-type": "application/pdf"}
-                )
-                fichier_url = supabase.storage.from_("epreuves").get_public_url(unique_name)
+                fichier_url = upload_vers_supabase(unique_name, file_content)
             except Exception as e:
                 flash(f"Erreur d'upload de l'énoncé : {e}", "error")
                 return redirect(url_for("modo_epreuve_new"))
@@ -850,12 +868,7 @@ def modo_epreuve_new():
                 corrige_content = corrige.read()
 
                 try:
-                    supabase.storage.from_("epreuves").upload(
-                        path=unique_corrige,
-                        file=corrige_content,
-                        file_options={"content-type": "application/pdf"}
-                    )
-                    fichier_corrige_url = supabase.storage.from_("epreuves").get_public_url(unique_corrige)
+                    fichier_url = upload_vers_supabase(unique_name, file_content)
                 except Exception as e:
                     flash(f"Erreur d'upload du corrigé : {e}", "error")
                     return redirect(url_for("modo_epreuve_new"))
@@ -927,7 +940,7 @@ def modo_epreuve_edit(epreuve_id):
                 if epreuve.fichier and epreuve.fichier.startswith("http"):
                     try:
                         ancien_nom = epreuve.fichier.split("/")[-1]
-                        supabase.storage.from_("epreuves").remove([ancien_nom])
+                        supprimer_de_supabase(ancien_nom)
                     except Exception as e:
                         print(f"Note: impossible de supprimer l'ancien fichier : {e}")
 
@@ -940,13 +953,8 @@ def modo_epreuve_edit(epreuve_id):
                 epreuve.taille = f"{taille_ko:.0f} Ko" if taille_ko < 1024 else f"{taille_ko/1024:.1f} Mo"
 
                 try:
-                    supabase.storage.from_("epreuves").upload(
-                        path=unique_name,
-                        file=file_content,
-                        file_options={"content-type": "application/pdf"}
-                    )
                     # 3. Mettre à jour l'URL dans la base de données
-                    epreuve.fichier = supabase.storage.from_("epreuves").get_public_url(unique_name)
+                    epreuve.fichier = upload_vers_supabase(unique_name, file_content)
                 except Exception as e:
                     flash(f"Erreur d'upload : {e}", "error")
                     return redirect(url_for("modo_epreuve_edit", epreuve_id=epreuve.id))
@@ -963,8 +971,8 @@ def modo_epreuve_edit(epreuve_id):
                 # 1. Supprimer l'ancien corrigé de Supabase
                 if epreuve.fichier_corrige and epreuve.fichier_corrige.startswith("http"):
                     try:
-                        ancien_corrige_nom = epreuve.fichier_corrige.split("/")[-1]
-                        supabase.storage.from_("epreuves").remove([ancien_corrige_nom])
+                        ancien_nom = epreuve.fichier.split("/")[-1]
+                        supprimer_de_supabase(ancien_nom)
                     except Exception as e:
                         print(f"Note: impossible de supprimer l'ancien corrigé : {e}")
 
@@ -973,13 +981,8 @@ def modo_epreuve_edit(epreuve_id):
                 corrige_content = corrige.read()
 
                 try:
-                    supabase.storage.from_("epreuves").upload(
-                        path=unique_corrige,
-                        file=corrige_content,
-                        file_options={"content-type": "application/pdf"}
-                    )
                     # 3. Mettre à jour l'URL du corrigé
-                    epreuve.fichier_corrige = supabase.storage.from_("epreuves").get_public_url(unique_corrige)
+                    epreuve.fichier_corrige = upload_vers_supabase(unique_name, file_content)
                 except Exception as e:
                     flash(f"Erreur d'upload du corrigé : {e}", "error")
                     return redirect(url_for("modo_epreuve_edit", epreuve_id=epreuve.id))
@@ -1280,12 +1283,8 @@ def modo_exercice_new():
             fichier_content = fichier.read() # Lecture en mémoire
 
             try:
-                supabase.storage.from_("epreuves").upload(
-                    path=unique_name,
-                    file=fichier_content,
-                    file_options={"content-type": "application/pdf"}
-                )
-                fichier_url = supabase.storage.from_("epreuves").get_public_url(unique_name)
+
+                fichier_url = upload_vers_supabase(unique_name, file_content)
             except Exception as e:
                 flash(f"Erreur d'upload de l'énoncé : {e}", "error")
                 return redirect(url_for("modo_exercice_new"))
@@ -1305,12 +1304,7 @@ def modo_exercice_new():
                 corrige_content = corrige.read()
 
                 try:
-                    supabase.storage.from_("epreuves").upload(
-                        path=unique_corrige,
-                        file=corrige_content,
-                        file_options={"content-type": "application/pdf"}
-                    )
-                    fichier_corrige_url = supabase.storage.from_("epreuves").get_public_url(unique_corrige)
+                    fichier_corrige_url = upload_vers_supabase(unique_name, file_content)
                 except Exception as e:
                     flash(f"Erreur d'upload du corrigé : {e}", "error")
                     return redirect(url_for("modo_exercice_new"))
@@ -1380,8 +1374,8 @@ def modo_exercice_edit(exercice_id):
                 # 1. Supprimer l'ancien fichier de Supabase (s'il existe)
                 if exercice.fichier and exercice.fichier.startswith("http"):
                     try:
-                        ancien_nom = exercice.fichier.split("/")[-1]
-                        supabase.storage.from_("epreuves").remove([ancien_nom])
+                        ancien_nom = epreuve.fichier.split("/")[-1]
+                        supprimer_de_supabase(ancien_nom)
                     except Exception as e:
                         print(f"Note: impossible de supprimer l'ancien fichier : {e}")
 
@@ -1390,12 +1384,7 @@ def modo_exercice_edit(exercice_id):
                 file_content = fichier.read()
                 
                 try:
-                    supabase.storage.from_("epreuves").upload(
-                        path=unique_name,
-                        file=file_content,
-                        file_options={"content-type": "application/pdf"}
-                    )
-                    exercice.fichier = supabase.storage.from_("epreuves").get_public_url(unique_name)
+                    exercice.fichier = upload_vers_supabase(unique_name, file_content)
                 except Exception as e:
                     flash(f"Erreur d'upload : {e}", "error")
                     return redirect(url_for("modo_exercice_edit", exercice_id=exercice.id))
