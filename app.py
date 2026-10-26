@@ -303,21 +303,28 @@ def supprimer_de_supabase(nom_fichier):
     requests.delete(url, headers=headers)
 
 def telecharger_depuis_supabase(nom_fichier):
-    # On nettoie le nom (au cas où il y a des paramètres ?t=...)
+    # 1. On nettoie le nom
     nom_propre = nom_fichier.split("?")[0]
     
-    # ⚠️ L'URL pour l'API (avec la clé secrète) n'a pas le mot "public"
-    url = f"{SUPABASE_URL}/storage/v1/object/epreuves/{nom_propre}"
+    # 2. On essaie de télécharger via l'API (pour les fichiers sans accents)
+    url_api = f"{SUPABASE_URL}/storage/v1/object/epreuves/{nom_propre}"
     headers = {"Authorization": f"Bearer {SUPABASE_KEY}"}
     
-    response = requests.get(url, headers=headers)
+    response = requests.get(url_api, headers=headers)
     
     if response.status_code == 200:
         return response.content
+        
+    # 3. Si ça échoue (ex: accent), on essaie via l'URL publique directe
+    url_public = f"{SUPABASE_URL}/storage/v1/object/public/epreuves/{nom_propre}"
+    response_public = requests.get(url_public)
+    
+    if response_public.status_code == 200:
+        return response_public.content
     else:
-        # Ça va afficher l'erreur dans les logs Vercel
-        print(f"❌ Erreur téléchargement Supabase ({response.status_code}) pour {url} : {response.text}")
-        raise Exception(f"Fichier introuvable : {response.status_code}")
+        print(f"❌ Erreur téléchargement (API: {response.status_code} / Public: {response_public.status_code}) pour {nom_propre}")
+        raise Exception("Fichier introuvable sur Supabase")
+      
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
