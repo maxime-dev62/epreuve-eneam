@@ -353,9 +353,16 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def generate_unique_filename(original):
-    ext = original.rsplit(".", 1)[1].lower()
-    return f"{uuid.uuid4().hex}.{ext}"
+def generate_unique_filename(original_filename):
+    """Génère un nom de fichier sûr (sans accents ni espaces) pour Supabase."""
+    # On garde l'extension (ex: .pdf)
+    ext = original_filename.rsplit(".", 1)[-1].lower() if "." in original_filename else "pdf"
+    
+    # On crée un UUID unique
+    unique_id = uuid.uuid4().hex
+    
+    # On retourne un nom 100% sûr
+    return f"{unique_id}.{ext}"
 
 
 def log_action(action, details=""):
