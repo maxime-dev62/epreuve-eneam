@@ -303,13 +303,21 @@ def supprimer_de_supabase(nom_fichier):
     requests.delete(url, headers=headers)
 
 def telecharger_depuis_supabase(nom_fichier):
-    """Télécharge un fichier depuis Supabase Storage."""
-    url = f"{SUPABASE_URL}/storage/v1/object/epreuves/{nom_fichier}"
+    # On nettoie le nom (au cas où il y a des paramètres ?t=...)
+    nom_propre = nom_fichier.split("?")[0]
+    
+    # ⚠️ L'URL pour l'API (avec la clé secrète) n'a pas le mot "public"
+    url = f"{SUPABASE_URL}/storage/v1/object/epreuves/{nom_propre}"
     headers = {"Authorization": f"Bearer {SUPABASE_KEY}"}
+    
     response = requests.get(url, headers=headers)
+    
     if response.status_code == 200:
         return response.content
-    raise Exception("Fichier introuvable sur Supabase")
+    else:
+        # Ça va afficher l'erreur dans les logs Vercel
+        print(f"❌ Erreur téléchargement Supabase ({response.status_code}) pour {url} : {response.text}")
+        raise Exception(f"Fichier introuvable : {response.status_code}")
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -380,18 +388,29 @@ def generer_zip_telechargement(fichier_url, fichier_corrige_url=None, nom_base="
         # 1. Télécharger et ajouter l'énoncé
         if fichier_url:
             try:
-                nom_fichier_supa = fichier_url.split("/")[-1]
+                # On récupère juste le nom du fichier depuis l'URL publique
+                nom_fichier_supa = fichier_url.split("/")[-1].split("?")[0]
+                print(f"🔍 Téléchargement de : {nom_fichier_supa}")
+                
                 response = telecharger_depuis_supabase(nom_fichier_supa)
-                zf.writestr(f"{nom_base}_Enonce.pdf", response)
+                print(f"✅ Taille reçue : {len(response)} octets")
+                
+                if len(response) > 0:
+                    zf.writestr(f"{nom_base}_Enonce.pdf", response)
             except Exception as e:
                 print(f"⚠️ Impossible de télécharger l'énoncé : {e}")
                 
         # 2. Télécharger et ajouter le corrigé
         if fichier_corrige_url:
             try:
-                nom_corrige_supa = fichier_corrige_url.split("/")[-1]
+                nom_corrige_supa = fichier_corrige_url.split("/")[-1].split("?")[0]
+                print(f"🔍 Téléchargement corrigé de : {nom_corrige_supa}")
+                
                 response_corrige = telecharger_depuis_supabase(nom_corrige_supa)
-                zf.writestr(f"{nom_base}_Corrige.pdf", response_corrige)
+                print(f"✅ Taille corrigé reçue : {len(response_corrige)} octets")
+                
+                if len(response_corrige) > 0:
+                    zf.writestr(f"{nom_base}_Corrige.pdf", response_corrige)
             except Exception as e:
                 print(f"⚠️ Impossible de télécharger le corrigé : {e}")
                 
