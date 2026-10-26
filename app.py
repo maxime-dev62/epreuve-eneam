@@ -13,8 +13,6 @@ from flask_login import (LoginManager, login_user, logout_user,
 from dotenv import load_dotenv
 from flask import json as json
 
-from supabase import create_client, Client
-
 from datetime import datetime,timedelta
 
 from flask_migrate import Migrate
