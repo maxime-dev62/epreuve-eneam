@@ -302,28 +302,7 @@ def supprimer_de_supabase(nom_fichier):
     headers = {"Authorization": f"Bearer {SUPABASE_KEY}"}
     requests.delete(url, headers=headers)
 
-def telecharger_depuis_supabase(nom_fichier):
-    # 1. On nettoie le nom
-    nom_propre = nom_fichier.split("?")[0]
-    
-    # 2. On essaie de télécharger via l'API (pour les fichiers sans accents)
-    url_api = f"{SUPABASE_URL}/storage/v1/object/epreuves/{nom_propre}"
-    headers = {"Authorization": f"Bearer {SUPABASE_KEY}"}
-    
-    response = requests.get(url_api, headers=headers)
-    
-    if response.status_code == 200:
-        return response.content
-        
-    # 3. Si ça échoue (ex: accent), on essaie via l'URL publique directe
-    url_public = f"{SUPABASE_URL}/storage/v1/object/public/epreuves/{nom_propre}"
-    response_public = requests.get(url_public)
-    
-    if response_public.status_code == 200:
-        return response_public.content
-    else:
-        print(f"❌ Erreur téléchargement (API: {response.status_code} / Public: {response_public.status_code}) pour {nom_propre}")
-        raise Exception("Fichier introuvable sur Supabase")
+
       
 @login_manager.user_loader
 def load_user(user_id):
@@ -395,42 +374,49 @@ def user_a_paye(user_id, epreuve_id):
         autorise=True,
     ).first() is not None
 
+def telecharger_depuis_supabase(url_complete):
+    """Télécharge directement depuis l'URL publique enregistrée en base."""
+    try:
+        # On utilise l'URL complète (qui contient déjà le dossier algebre1/ etc.)
+        response = requests.get(url_complete)
+        if response.status_code == 200:
+            return response.content
+        else:
+            print(f"❌ Erreur téléchargement ({response.status_code}) pour {url_complete}")
+            return None
+    except Exception as e:
+        print(f"❌ Erreur réseau : {e}")
+        return None
+
 def generer_zip_telechargement(fichier_url, fichier_corrige_url=None, nom_base="Fichier"):
     memory_file = io.BytesIO()
     
     with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
         # 1. Télécharger et ajouter l'énoncé
         if fichier_url:
-            try:
-                # On récupère juste le nom du fichier depuis l'URL publique
-                nom_fichier_supa = fichier_url.split("/")[-1].split("?")[0]
-                print(f"🔍 Téléchargement de : {nom_fichier_supa}")
-                
-                response = telecharger_depuis_supabase(nom_fichier_supa)
-                print(f"✅ Taille reçue : {len(response)} octets")
-                
-                if len(response) > 0:
-                    zf.writestr(f"{nom_base}_Enonce.pdf", response)
-            except Exception as e:
-                print(f"⚠️ Impossible de télécharger l'énoncé : {e}")
+            print(f"🔍 Téléchargement de l'énoncé : {fichier_url}")
+            contenu = telecharger_depuis_supabase(fichier_url)
+            
+            if contenu:
+                zf.writestr(f"{nom_base}_Enonce.pdf", contenu)
+                print(f"✅ Énoncé ajouté au ZIP ({len(contenu)} octets)")
+            else:
+                print("⚠️ Impossible d'ajouter l'énoncé.")
                 
         # 2. Télécharger et ajouter le corrigé
         if fichier_corrige_url:
-            try:
-                nom_corrige_supa = fichier_corrige_url.split("/")[-1].split("?")[0]
-                print(f"🔍 Téléchargement corrigé de : {nom_corrige_supa}")
-                
-                response_corrige = telecharger_depuis_supabase(nom_corrige_supa)
-                print(f"✅ Taille corrigé reçue : {len(response_corrige)} octets")
-                
-                if len(response_corrige) > 0:
-                    zf.writestr(f"{nom_base}_Corrige.pdf", response_corrige)
-            except Exception as e:
-                print(f"⚠️ Impossible de télécharger le corrigé : {e}")
+            print(f"🔍 Téléchargement du corrigé : {fichier_corrige_url}")
+            contenu_corrige = telecharger_depuis_supabase(fichier_corrige_url)
+            
+            if contenu_corrige:
+                zf.writestr(f"{nom_base}_Corrige.pdf", contenu_corrige)
+                print(f"✅ Corrigé ajouté au ZIP ({len(contenu_corrige)} octets)")
+            else:
+                print("⚠️ Impossible d'ajouter le corrigé.")
                 
     memory_file.seek(0)
     return memory_file
-  
+
 def telephone_a_paye(telephone, epreuve_id):
     """Vérifie si ce numéro a déjà payé pour cette épreuve."""
     if not telephone:
@@ -1316,7 +1302,7 @@ def modo_exercice_new():
 
             try:
 
-                fichier_url = upload_vers_supabase(unique_name, file_content)
+                fichier_url = upload_vers_supabase(unique_corrige, corrige_content)
             except Exception as e:
                 flash(f"Erreur d'upload de l'énoncé : {e}", "error")
                 return redirect(url_for("modo_exercice_new"))
@@ -1336,7 +1322,7 @@ def modo_exercice_new():
                 corrige_content = corrige.read()
 
                 try:
-                    fichier_corrige_url = upload_vers_supabase(unique_name, file_content)
+                    fichier_corrige_url = upload_vers_supabase(unique_corrige, corrige_content)
                 except Exception as e:
                     flash(f"Erreur d'upload du corrigé : {e}", "error")
                     return redirect(url_for("modo_exercice_new"))
@@ -1406,7 +1392,7 @@ def modo_exercice_edit(exercice_id):
                 # 1. Supprimer l'ancien fichier de Supabase (s'il existe)
                 if exercice.fichier and exercice.fichier.startswith("http"):
                     try:
-                        ancien_nom = epreuve.fichier.split("/")[-1]
+                        ancien_nom = exercice.fichier.split("/")[-1]
                         supprimer_de_supabase(ancien_nom)
                     except Exception as e:
                         print(f"Note: impossible de supprimer l'ancien fichier : {e}")
@@ -1433,7 +1419,7 @@ def modo_exercice_edit(exercice_id):
                 # 1. Supprimer l'ancien corrigé de Supabase
                 if exercice.fichier_corrige and exercice.fichier_corrige.startswith("http"):
                     try:
-                        ancien_nom = epreuve.fichier.split("/")[-1]
+                        ancien_nom = exercice.fichier.split("/")[-1]
                         supprimer_de_supabase(ancien_nom)
                     except Exception as e:
                         print(f"Note: impossible de supprimer l'ancien corrigé : {e}")
