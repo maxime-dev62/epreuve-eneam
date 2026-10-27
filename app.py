@@ -375,14 +375,26 @@ def user_a_paye(user_id, epreuve_id):
     ).first() is not None
 
 def telecharger_depuis_supabase(url_complete):
-    """Télécharge directement depuis l'URL publique enregistrée en base."""
+    """Télécharge le fichier via l'API Supabase (contourne les restrictions d'URL publique)."""
     try:
-        # On utilise l'URL complète (qui contient déjà le dossier algebre1/ etc.)
-        response = requests.get(url_complete)
+        # 1. On extrait le chemin après "/object/public/"
+        # Exemple : https://.../object/public/epreuves/f240ad18abbd43a7b76c8b6efda5477a.pdf
+        # Devient : f240ad18abbd43a7b76c8b6efda5477a.pdf
+        if "/object/public/" in url_complete:
+            chemin_fichier = url_complete.split("/object/public/")[-1]
+        else:
+            chemin_fichier = url_complete.split("/")[-1]
+            
+        # 2. On utilise l'API interne avec la clé d'administration
+        url_api = f"{SUPABASE_URL}/storage/v1/object/epreuves/{chemin_fichier}"
+        headers = {"Authorization": f"Bearer {SUPABASE_KEY}"}
+        
+        response = requests.get(url_api, headers=headers)
+        
         if response.status_code == 200:
             return response.content
         else:
-            print(f"❌ Erreur téléchargement ({response.status_code}) pour {url_complete}")
+            print(f"❌ Erreur téléchargement ({response.status_code}) pour {chemin_fichier}")
             return None
     except Exception as e:
         print(f"❌ Erreur réseau : {e}")
