@@ -13,6 +13,9 @@
     <form method="POST" action="{{ url_for('payer_abonnement') }}">
         <label>Votre numéro Mobile Money</label>
         <input type="tel" name="telephone" required pattern="[0-9]{10}" placeholder="ex: 0162043243" style="text-align:center; font-size:1.2rem;">
+
+        <label>Votre adresse Email (pour le reçu)</label>
+        <input type="email" name="email" required placeholder="ex: monemail@gmail.com">
         
         <button type="submit" class="btn btn-primary" style="width:100%; padding:1rem; margin-top:1rem;">
             💳 Payer l'abonnement
