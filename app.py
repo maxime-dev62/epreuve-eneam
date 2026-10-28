@@ -1621,6 +1621,7 @@ def payer_epreuve(epreuve_id):
         montant = int(request.form.get("montant", 0))
         telephone = request.form.get("telephone", "").strip()
         operateur = request.form.get("operateur", "").strip()
+        email_client = request.form.get("email", "").strip()
 
         if montant < PRIX_MINIMUM:
             flash(f"Le montant minimum est de {PRIX_MINIMUM} FCFA.", "error")
@@ -1634,7 +1635,7 @@ def payer_epreuve(epreuve_id):
                 "amount": montant,
                 "currency": {"iso": "XOF"},
                 "callback_url": url_for("paiement_retour", _external=True),
-                "customer": {"firstname": "Eleve", "email": "eleve@eneam.edu"}, # Pas besoin de compte
+                "customer": {"firstname": "Eleve", "email": email_client}, # Pas besoin de compte
             }
             r = requests.post(f"{FEDAPAY_BASE_URL}/transactions", json=data, headers=headers, timeout=15)
             r.raise_for_status()
@@ -1679,6 +1680,7 @@ def payer_exercice(exercice_id):
         montant = int(request.form.get("montant", 0))
         telephone = request.form.get("telephone", "").strip()
         operateur = request.form.get("operateur", "").strip()
+        email_client = request.form.get("email", "").strip()
 
         if montant < PRIX_MINIMUM:
             flash(f"Le montant minimum est de {PRIX_MINIMUM} FCFA.", "error")
@@ -1692,7 +1694,7 @@ def payer_exercice(exercice_id):
                 "amount": montant,
                 "currency": {"iso": "XOF"},
                 "callback_url": url_for("paiement_retour", _external=True),
-                "customer": {"firstname": current_user.username, "email": current_user.email or "eleve@eneam.edu"},
+                "customer": {"firstname": "Eleve", "email": email_client},
             }
             r = requests.post(f"{FEDAPAY_BASE_URL}/transactions", json=data, headers=headers, timeout=15)
             r.raise_for_status()
