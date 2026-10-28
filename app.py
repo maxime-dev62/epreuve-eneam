@@ -375,28 +375,24 @@ def user_a_paye(user_id, epreuve_id):
     ).first() is not None
 
 def telecharger_depuis_supabase(url_complete):
-    """Télécharge le fichier en gérant les sous-dossiers."""
+    """Télécharge le fichier en utilisant l'URL exacte fournie par la base de données."""
     try:
-        # 1. On extrait TOUT le chemin après "epreuves/"
-        # Ex: https://.../epreuves/algebre1/epreuves/mon_fichier.pdf -> algebre1/epreuves/mon_fichier.pdf
-        # Si le fichier est à la racine : https://.../epreuves/mon_fichier.pdf -> mon_fichier.pdf
-        if "/epreuves/" in url_complete:
-            chemin_fichier = url_complete.split("/epreuves/")[-1]
-        else:
-            chemin_fichier = url_complete.split("/")[-1]
-            
-        # 2. On construit l'URL de l'API interne (sans "public")
-        url_api = f"{SUPABASE_URL}/storage/v1/object/epreuves/{chemin_fichier}"
-        
-        # 3. On utilise la clé secrète pour l'autorisation
-        headers = {"Authorization": f"Bearer {SUPABASE_KEY}"}
-        
-        response = requests.get(url_api, headers=headers)
+        # On s'assure que l'URL est bien complète
+        if not url_complete.startswith("http"):
+            print(f"❌ L'URL n'est pas valide : {url_complete}")
+            return None
+
+        # On ajoute ?download pour forcer le téléchargement du fichier brut
+        url_download = url_complete
+        if "?" not in url_download:
+            url_download += "?download"
+
+        response = requests.get(url_download)
         
         if response.status_code == 200:
             return response.content
         else:
-            print(f"❌ Erreur téléchargement ({response.status_code}) pour {chemin_fichier}")
+            print(f"❌ Erreur téléchargement ({response.status_code}) pour {url_download}")
             print(f"   Détail : {response.text}")
             return None
             
