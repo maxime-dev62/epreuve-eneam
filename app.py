@@ -1658,7 +1658,7 @@ def payer_epreuve(epreuve_id):
             session["telephone_paiement"] = telephone
 
             # Redirection FedaPay
-            r2 = requests.post(f"{FEDAPAY_BASE_URL}/transactions/{transaction_id}/token", headers=headers, timeout=15)
+            r2 = requests.post(f"{FEDAPAY_BASE_URL}/transactions/{transaction_id}/token", headers=headers, timeout=30)
             r2.raise_for_status()
             return redirect(f"https://process.fedapay.com/{r2.json()['token']}")
 
@@ -1714,7 +1714,7 @@ def payer_exercice(exercice_id):
             db.session.commit()
 
             # Redirige vers FedaPay
-            r2 = requests.post(f"{FEDAPAY_BASE_URL}/transactions/{transaction_id}/token", headers=headers, timeout=15)
+            r2 = requests.post(f"{FEDAPAY_BASE_URL}/transactions/{transaction_id}/token", headers=headers, timeout=30)
             r2.raise_for_status()
             token = r2.json()["token"]
             return redirect(f"https://process.fedapay.com/{token}")
@@ -1800,6 +1800,7 @@ def abonnement():
 
 @app.route("/abonnement/payer", methods=["POST"])
 def payer_abonnement():
+    email_client = request.form.get("email", "").strip()
     telephone = request.form.get("telephone", "").strip()
     if not telephone:
         flash("Numéro de téléphone obligatoire.", "error")
@@ -1813,9 +1814,9 @@ def payer_abonnement():
             "currency": {"iso": "XOF"},
             # L'URL de retour pour l'abonnement
             "callback_url": url_for("abonnement_retour", _external=True),
-            "customer": {"firstname": "Abonne", "email": f"{telephone}@eneam.edu"},
+            "customer": {"firstname": "Abonne", "email": email_client},
         }
-        r = requests.post(f"{FEDAPAY_BASE_URL}/transactions", json=data, headers=headers, timeout=15)
+        r = requests.post(f"{FEDAPAY_BASE_URL}/transactions", json=data, headers=headers, timeout=30)
         r.raise_for_status()
         transaction_id = r.json()["v1/transaction"]["id"]
 
@@ -1823,7 +1824,7 @@ def payer_abonnement():
         db.session.add(abo)
         db.session.commit()
 
-        r2 = requests.post(f"{FEDAPAY_BASE_URL}/transactions/{transaction_id}/token", headers=headers, timeout=15)
+        r2 = requests.post(f"{FEDAPAY_BASE_URL}/transactions/{transaction_id}/token", headers=headers, timeout=30)
         r2.raise_for_status()
         return redirect(f"https://process.fedapay.com/{r2.json()['token']}")
 
