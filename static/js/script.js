@@ -114,6 +114,7 @@ document.querySelectorAll('.matieres').forEach(link => {
             question.style.cursor='pointer';
         }
         question.addEventListener('click',()=> {
+            document.querySelectorAll('.sous-btn').forEach(sec => sec.style.display='none');
             answer.style.display = answer.style.display === 'none'? 'block' : 'none';
             });
     });
