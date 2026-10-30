@@ -114,7 +114,6 @@ document.querySelectorAll('.matieres').forEach(link => {
             question.style.cursor='pointer';
         }
         question.addEventListener('click',()=> {
-            document.querySelectorAll('.sous-btn').forEach(sec => sec.style.display='none');
             answer.style.display = answer.style.display === 'none'? 'block' : 'none';
             });
     });
@@ -179,7 +178,7 @@ document.getElementById('search-btn').addEventListener('click', () => {
 
     // 7. SCROLL ET MESSAGE
     if (found) {
-        window.scrollTo({top: 750, behavior:'smooth'});
+        window.scrollTo({top: 900, behavior:'smooth'});
     }
 
     document.getElementById('search-msg').textContent = found ? '' : 'Cette épreuve n\'est pas encore dans la base de données';
