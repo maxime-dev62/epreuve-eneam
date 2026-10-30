@@ -26,26 +26,66 @@ document.addEventListener('click', function(e) {
 // -----------------------------
 // FILIÈRE CLICK
 // -----------------------------
+// 1. CLIC SUR UN BOUTON DE FILIÈRE (Menu du haut)
 document.querySelectorAll('.btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+        // Si le clic vient d'un bouton qui a un data-filiere
         const filiere = btn.dataset.filiere;
-        // Cacher toutes les filières
-        document.querySelectorAll('.filliere-section').forEach(sec => sec.style.display='none');
-        // Afficher la filière sélectionnée
+        if (!filiere) return;
+
+        // On cache toutes les filières
+        document.querySelectorAll('.filiere-section').forEach(sec => sec.style.display='none');
+        
+        // On affiche uniquement la filière sélectionnée
         const selected = document.getElementById(filiere);
         if(selected) {
             selected.style.display='block';
         }
+
+        // On ferme le menu déroulant (sous-btn) de la filière qu'on vient de cliquer
+        const sousBtn = btn.nextElementSibling;
+        if (sousBtn && sousBtn.classList.contains('sous-btn')) {
+            sousBtn.style.display = sousBtn.style.display === 'none' ? 'block' : 'none';
+        }
     });
 });
-document.querySelectorAll('.matieres').forEach(link=>{
-    link.addEventListener('click',() =>{
-        document.querySelectorAll('.filliere, .sous-btn').forEach(sec => sec.style.display='grid');
-        const getid= link.getAttribute('href').substring(1); // récupérer l'id
+
+// 2. CLIC SUR UNE MATIÈRE (dans le menu déroulant)
+document.querySelectorAll('.matieres').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault(); // Empêche le saut brusque
+        
+        // On récupère l'ID de la matière (ex: "alg")
+        const getid = link.getAttribute('href').substring(1); 
         const getElement = document.getElementById(getid);
-        getElement.style.display='grid';        
-        });
-            });
+
+        if (getElement) {
+            // On cherche dans quelle filière se trouve cette matière
+            const filiereParent = getElement.closest('.filiere-section');
+            
+            if (filiereParent) {
+                // 1. On cache TOUTES les filières
+                document.querySelectorAll('.filiere-section').forEach(sec => sec.style.display='none');
+                
+                // 2. On affiche UNIQUEMENT la filière parente
+                filiereParent.style.display = 'block';
+
+                // 3. On cache TOUTES les matières de cette filière
+                filiereParent.querySelectorAll('.filliere').forEach(mat => mat.style.display='none');
+                
+                // 4. On affiche UNIQUEMENT la matière cliquée
+                getElement.style.display = 'grid';
+
+                // 5. On scroll jusqu'à la matière (avec un petit délai pour laisser le temps d'afficher)
+                setTimeout(() => {
+                    const yOffset = -80; // Pour ne pas être caché par le menu
+                    const y = getElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                }, 50);
+            }
+        }
+    });
+});
 //----------------------------------
 // FAQ CLICK
 //----------------------------------
@@ -65,15 +105,7 @@ document.querySelectorAll('.matieres').forEach(link=>{
 //----------------------------------
 //  FILLIERE CLICK
 //----------------------------------
-    const okItems = document.querySelectorAll('.fil');
-    okItems.forEach(item =>{
-        const question = item.querySelector('.btn');
-        const answer = item.querySelector('.sous-btn');
-        answer.style.display='none';
-        question.addEventListener('click',()=> {
-            answer.style.display = answer.style.display === 'none'? 'block' : 'none';
-            });
-    });
+
     
     
 
