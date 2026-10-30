@@ -105,8 +105,20 @@ document.querySelectorAll('.matieres').forEach(link => {
 //----------------------------------
 //  FILLIERE CLICK
 //----------------------------------
+    const okItems = document.querySelectorAll('.fil');
+    okItems.forEach(item =>{
+        const question = item.querySelector('.btn');
+        const answer = item.querySelector('.sous-btn');
+        if (answer) {
+            answer.style.display='none';
+            question.style.cursor='pointer';
+        }
+        question.addEventListener('click',()=> {
+            document.querySelectorAll('.sous-btn').forEach(sec => sec.style.display='none');
+            answer.style.display = answer.style.display === 'none'? 'block' : 'none';
+            });
+    });
 
-    
     
 
 
