@@ -42,7 +42,7 @@
     </div>
 </section>
 
-<div><a href="{{ url_for('liste_exercices') }}" ><button style="text-align:center;" class="btn-payant">Voir les exercices</button></a></div>
+<div><a href="{{ url_for('liste_exercices') }}" ><button id="e" class="btn-payant">Voir les exercices</button></a></div>
 
 <div style="margin-top: 2rem; text-align: center;">
     {% if current_user.is_authenticated %}
