@@ -196,7 +196,7 @@ a:hover { color: var(--primary-dark); }
 /* =========================================================
    BOUTONS
    ========================================================= */
-.btn {
+.btn #e{
     display: inline-block;
     padding: 0.7rem 1.4rem;
     border: none;
